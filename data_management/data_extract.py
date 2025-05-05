@@ -1,6 +1,9 @@
 import pandas as pd
 import yfinance as yf
 import numpy as np
+from joblib import Memory
+
+memory = Memory(location = ".cache", verbose=0)
 
 
 def load_excel_data(path):
@@ -22,6 +25,7 @@ def filter_by_sectors(df, sector):
     tickers = df.loc[df['Sector'] == sector, 'Symbol'].tolist()
     return tickers
 
+@memory.cache
 def get_financial_data(sector):
     ticker_data = {}
     for ticker in sector:
@@ -43,6 +47,7 @@ def get_financial_data(sector):
     ticker_data["Log Market Cap"] = np.log(ticker_data["Log Market Cap"])
     return ticker_data
 
+@memory.cache
 def download_log_close(tickers, start = "2022-01-01", end = "2025-05-01"):
     data = yf.download(tickers, start=start, end = end)['Close']
     data = data.dropna()
