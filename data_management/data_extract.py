@@ -43,6 +43,10 @@ def get_financial_data(sector):
     ticker_data["Log Market Cap"] = np.log(ticker_data["Log Market Cap"])
     return ticker_data
 
+def download_log_close(tickers, start = "2022-01-01", end = "2025-05-01"):
+    data = yf.download(tickers, start=start, end = end)['Close']
+    data = data.dropna()
+    return np.log(data)
 # Debugging
 # df = load_excel_data("s&p500.xlsx")
 # info_sect = filter_by_sectors(df, "Information Technology")
