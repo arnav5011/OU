@@ -29,8 +29,6 @@ def get_financial_data(sector):
         info = ticker.info
         # print(info.keys())
         market_cap = info.get("marketCap", np.nan)
-        PE = info.get("trailingPE",np.nan)
-        ROE = info.get("returnOnEquity",np.nan)
         history = ticker.history(period='1y', interval='1d')['Close'].dropna()
         if len(history) < 200:
             # not enough data—skip
@@ -40,8 +38,9 @@ def get_financial_data(sector):
         mom   = ma50 / ma200 if ma200 else np.nan
         daily_ret = history.pct_change().dropna()
         vol_a = daily_ret.std() * np.sqrt(252)
-        ticker_data[str(ticker)] = (info.get("symbol",np.nan), market_cap, PE, ROE, mom, vol_a)
-    ticker_data = pd.DataFrame.from_dict(ticker_data, orient = "index", columns=["Ticker", "Market Cap", "PE", "ROE", "Momentum", "Volatility"]).dropna()
+        ticker_data[str(ticker)] = (info.get("symbol",np.nan), market_cap, mom, vol_a)
+    ticker_data = pd.DataFrame.from_dict(ticker_data, orient = "index", columns=["Ticker", "Log Market Cap", "Momentum", "Volatility"]).dropna()
+    ticker_data["Log Market Cap"] = np.log(ticker_data["Log Market Cap"])
     return ticker_data
 
 # Debugging
