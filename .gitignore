@@ -1,13 +1,3 @@
-# Python bytecode
-__pycache__/
-*.py[cod]
-*.pyo
-
-# Joblib or other disk cache
-.cache/
-
-# Virtual environments (if any)
 venv/
-env/
-*.egg-info/
-
+API_setup.py
+__pycache__/
