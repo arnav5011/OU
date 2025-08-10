@@ -9,9 +9,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans, AgglomerativeClustering, SpectralClustering
 from sklearn.mixture import GaussianMixture
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+from sklearn.decomposition import PCA
 from abc import ABC, abstractmethod
 from itertools import product
+import matplotlib.pyplot as plt
 import math
+import numpy as np
 
 class ImportProcessed:
     @staticmethod
@@ -67,6 +70,16 @@ class ClusterModels(ABC):
             "calinski": calinski_harabasz_score(X, self.labels),
             "davies": davies_bouldin_score(X, self.labels)
         }
+    
+    def show_baskets(self):
+        if self.labels is None:
+            raise ValueError("Model must be fit before showing baskets.")
+
+        df = self.get_clustered_data()
+        baskets = {cluster: group.index.tolist() for cluster, group in df.groupby("cluster")}
+        for cluster, items in baskets.items():
+            print(f"\nCluster {cluster} ({len(items)} items):")
+            print(items)
     
 class ClusterFactory:
     @staticmethod
@@ -149,26 +162,34 @@ class SpectralClusteringModel(ClusterModels):
         self.n_clusters = kwargs.get("n_clusters", self.n_clusters)
         self.affinity = kwargs.get("affinity", self.affinity)
     
-
 class ClusteringOptimizer:
     def __init__(self, model: ClusterModels):
         self.model = model
 
-    def _custom_score(self, metrics, kwargs):
-        # Get number of clusters (n_components for GMM)
+    def _cluster_balance_penalty(self, labels):
+        from collections import Counter
+        counts = list(Counter(labels).values())
+        sizes = np.array(counts) / sum(counts)  # relative sizes
+        # Penalize if cluster sizes vary too much, e.g. high std dev
+        penalty = np.std(sizes)
+        return penalty
+
+    def _custom_score(self, metrics, kwargs, labels):
+        # your current score
         n_clusters = kwargs.get("n_clusters") or kwargs.get("n_components", 1)
-        
         silhouette = metrics["silhouette"]
         calinski = metrics["calinski"]
         davies = metrics["davies"]
-
-        # Avoid division by zero
         if davies <= 0 or silhouette <= 0:
             return -float("inf")
+        base_score = (silhouette * math.log(calinski + 1)) / (davies) * math.sqrt(n_clusters)
 
-        # Scoring formula tuned for mean reversion clustering
-        score = (silhouette * math.log(calinski + 1)) / (davies) * math.log(n_clusters)
-        return score
+        # Add cluster balance penalty (higher penalty reduces score)
+        penalty = self._cluster_balance_penalty(labels)
+
+        
+        adjusted_score = base_score - 25 * penalty
+        return adjusted_score
 
     def search(self):
         all_results = []
@@ -183,7 +204,7 @@ class ClusteringOptimizer:
                 self.model.fit()
                 metrics = self.model.evaluate()
 
-                score = self._custom_score(metrics, kwargs)
+                score = self._custom_score(metrics, kwargs, self.model.labels)
                 all_results.append((kwargs, metrics, score))
 
                 if score > best_score:
