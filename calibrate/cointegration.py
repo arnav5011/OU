@@ -105,7 +105,7 @@ class CointegrrationTest:
     def _johansen_test(self, tickers):
         series = self._log_price_data[tickers].dropna()
         if len(series) < 30:
-            return False, None, 
+            return False, None, None
         
         rank = 0
         result = coint_johansen(series, det_order=0, k_ar_diff=1)
