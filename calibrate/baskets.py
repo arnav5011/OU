@@ -4,4 +4,4 @@ class Basket:
     def __init__(self, cluster_id: int, cointegration_result: CointegratedResults, params: OUResults):
         self.cluster_id = cluster_id
         self.params = params
-        self.cointegration_resul = cointegration_result
+        self.cointegration_result = cointegration_result

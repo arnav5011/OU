@@ -14,10 +14,16 @@ import numpy as np
 
 class PriceData:
     @staticmethod
-    def get_time_series(data: pd.DataFrame, start_date, end_date):
+    def get_time_series(data, start_date, end_date):
+        if isinstance(data, pd.DataFrame): 
+            ticker_list = data.index.tolist()
+        elif isinstance(data, list):
+            ticker_list = data
+        else:
+            raise ValueError("Kill yourself retard")
         start_date = parse_date(start_date)
         end_date = parse_date(end_date)
-        ticker_list = data.index.tolist()
+        
         batch_size = 20
         all_prices = []
         failed_tickers = []
@@ -76,18 +82,16 @@ class CointegratedResults:
 
 class CointegrrationTest:
     def __init__(self, _log_price_data, clustered_data):
-        self._log_price_data = np.log10(_log_price_data)
+        self._log_price_data = np.log(_log_price_data)
         self.clustered_data = clustered_data
     
     def _engle_granger_test(self, ticker1, ticker2, confidence_level=0.8): # For sake of testing 80% confidence
         series1 = self._log_price_data[ticker1].dropna()
         series2 = self._log_price_data[ticker2].dropna()
-            
+
+        series1, series2 = series1.align(series2, join='inner')    
         print(f"series1: {len(series1)}, series2: {len(series2)}")
-        if len(series1) != len(series2):
-            min_length = min(len(series1), len(series2))
-            series1 = series1[-min_length:]
-            series2 = series2[-min_length:]
+        
         
         if len(series1) < 30 or len(series2) < 30:
             return False, None, None, None

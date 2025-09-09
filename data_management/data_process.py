@@ -1,12 +1,12 @@
 import pandas as pd
 import yfinance as yf
-from utils.parsers import parse_date
 from collections import defaultdict
 import argparse
 import os
 import sys
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(project_root)
+from utils.parsers import parse_date
 import constants
 
 class RawDataRead:
