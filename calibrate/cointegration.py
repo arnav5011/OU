@@ -12,56 +12,10 @@ from time import sleep
 from statsmodels.tsa.stattools import adfuller
 import numpy as np
 
-class PriceData:
-    @staticmethod
-    def get_time_series(data, start_date, end_date):
-        if isinstance(data, pd.DataFrame): 
-            ticker_list = data.index.tolist()
-        elif isinstance(data, list):
-            ticker_list = data
-        else:
-            raise ValueError("Kill yourself retard")
-        start_date = parse_date(start_date)
-        end_date = parse_date(end_date)
-        
-        batch_size = 20
-        all_prices = []
-        failed_tickers = []
 
-        for i in range(0, len(ticker_list), batch_size):
-            batch = ticker_list[i:i + batch_size]
-            retries = 0
-            while retries < 5:
-                try:
-                    prices = yf.download(batch, start=start_date, end=end_date)['Close']
-                    
-                    # Detect missing tickers
-                    missing = [t for t in batch if t not in prices.columns]
-                    if not prices.empty and len(missing) == 0:
-                        all_prices.append(prices)
-                        break  # batch success
-                    else:
-                        print(f"Missing tickers {missing}, retrying batch...")
-                        batch = missing  # retry only missing tickers
-                        retries += 1
-                        sleep(10)
-                except Exception as e:
-                    print(f"Error downloading batch {batch}: {e}")
-                    retries += 1
-                    sleep(10)
-
-            # Any tickers still missing after retries
-            if retries == 5 and len(batch) > 0:
-                failed_tickers.extend(batch)
-
-        _log_price_data = pd.concat(all_prices, axis=1)
-
-        if failed_tickers:
-            print(f"⚠ Warning: Failed to download data for {failed_tickers}")
-
-        return _log_price_data
 
 class CointegratedResults:
+    """Class to store results of cointegration tests."""
     def __init__(self, type, cointegrated, **kwargs):
         self.type = type
         self.cointegrated = cointegrated
@@ -81,11 +35,16 @@ class CointegratedResults:
             raise ValueError("No weight list available to modify chosen weights.")
 
 class CointegrrationTest:
+    """Class to perform cointegration tests on clustered data."""
     def __init__(self, _log_price_data, clustered_data):
         self._log_price_data = np.log(_log_price_data)
         self.clustered_data = clustered_data
     
     def _engle_granger_test(self, ticker1, ticker2, confidence_level=0.8):
+        """Perform Engle-Granger cointegration test on two time series.
+        Keep Confidence interval lower for more lenient test
+        A secondary ADF test can be performed on the spread to confirm stationarity.
+        """
         series1 = self._log_price_data[ticker1].dropna()
         series2 = self._log_price_data[ticker2].dropna()
 
@@ -107,6 +66,11 @@ class CointegrrationTest:
         return cointegrated, p_value, alpha, beta
 
     def _johansen_test(self, tickers):
+        """Perform Johansen cointegration test on multiple time series.
+        Keep Confidence interval lower for more lenient test
+        A secondary ADF test can be performed on the spread to confirm stationarity.
+        """
+        # Will later on add a custom johansen implementaiton 
         series = self._log_price_data[tickers].dropna()
         if len(series) < 30:
             return False, None, None
@@ -194,6 +158,7 @@ class BasketCointegrationTest:
         self.price_data = price_data
     
     def run_test(self, pval_threshold=0.15):
+        "Test Cointegration of the basket using ADF test on the spread"
         coint = self.basket.cointegration_result
         if coint.type == "Engle-Granger":
             spread = self.price_data[coint.ticker_1] - coint.beta * self.price_data[coint.ticker_2]

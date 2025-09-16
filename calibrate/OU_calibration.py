@@ -13,6 +13,17 @@ class OUResults:
         self.c = ols_params["c"]
         self.sigma_eps2 = ols_params["sigma_eps2"]
         self.ols_summary = ols_params["ols_summary"]
+    
+    def summary(self):
+        return {
+            "theta": self.theta,
+            "mu": self.mu,
+            "sigma": self.sigma,
+            "half_life": self.half_life,
+            "phi": self.phi,
+            "c": self.c,
+            "sigma_eps2": self.sigma_eps2
+        }
 
 class OUCalibration:
     def __init__(self, price_data, cointegrated_cluster_data: dict[int, CointegratedResults]):

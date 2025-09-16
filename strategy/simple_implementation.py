@@ -5,8 +5,8 @@ import sys
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(project_root)
 from calibrate.baskets import Basket
-from calibrate.cointegration import PriceData
 from utils import ou_trading_utils
+from utils.price_data_utils import get_time_series
 
 class OUTrader:
     def __init__(self, start_date, end_date, baskets: list[Basket], initial_capital = 1e7):
@@ -24,7 +24,7 @@ class OUTrader:
                     ticker_list.append(ticker)
             else:
                 raise ValueError("Invalid integration test")
-        self.price_data = PriceData.get_time_series(ticker_list, start_date, end_date)
+        self.price_data = get_time_series(ticker_list, start_date, end_date)
         self.log_price_data = np.log(self.price_data)
         self.baskets = baskets
         self.initial_capital = float(initial_capital)
@@ -67,10 +67,15 @@ class OUTrader:
             }
 
             portfolio_pnl += pnl
+        
+        portfolio_value = self.initial_capital + portfolio_pnl.cumsum()
+        portfolio_returns = portfolio_value.pct_change().fillna(0)
 
         results = {
             "portfolio_pnl": portfolio_pnl,
             "portfolio_cum_pnl": portfolio_pnl.cumsum(),
+            "portfolio_returns": portfolio_returns,
+            "portfolio_value": portfolio_value,
             "basket_results": basket_results
         }
 

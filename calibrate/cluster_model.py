@@ -18,6 +18,7 @@ import numpy as np
 
 class ImportProcessed:
     @staticmethod
+    # Use this function to import the processed CSV data for a given sector and date range after running data_management/data_process.py
     def import_csv(sector, start_date, end_date):
         file_path = os.path.join(constants.DIRNAME, "data_management",
                                  "processed_data", f"{sector}", f"{start_date} - {end_date}", "features.csv")
@@ -25,6 +26,7 @@ class ImportProcessed:
         return feature_data
 
 class NormalizeData:
+    # Normalize the features using StandardScaler for clustering
     def __init__(self, sector, start_date, end_date):
         parsed_start_date = parse_date(start_date)
         parsed_end_date = parse_date(end_date)
@@ -38,6 +40,7 @@ class NormalizeData:
         return normalized_df
 
 class ClusterModels(ABC):
+    # Base class for clustering models
     def __init__(self, sector, start_date, end_date):
         self.normalized_data = NormalizeData(sector, start_date, end_date).normalize_features()
         self.model = None
@@ -62,7 +65,6 @@ class ClusterModels(ABC):
     def modify_parameters(self):
         pass
 
-
     def evaluate(self):
         X = self.normalized_data
         return {
@@ -83,6 +85,7 @@ class ClusterModels(ABC):
     
 class ClusterFactory:
     @staticmethod
+    # Make this scaleable for future clustering models by using cls
     def create(model_name, sector, start_date, end_date, **kwargs):
         if model_name == "kmeans":
             return KMeansClustering(sector, start_date, end_date, **kwargs)
@@ -95,6 +98,7 @@ class ClusterFactory:
         else:
             raise ValueError(f"Unknown clustering model: {model_name}")
 
+# Implement different clustering models inheriting from ClusterModels
 class KMeansClustering(ClusterModels):
     def __init__(self, sector, start_date, end_date, **kwargs):
         super().__init__(sector, start_date, end_date)
@@ -162,6 +166,7 @@ class SpectralClusteringModel(ClusterModels):
         self.n_clusters = kwargs.get("n_clusters", self.n_clusters)
         self.affinity = kwargs.get("affinity", self.affinity)
     
+# Method to find the optimum clustering parameters
 class ClusteringOptimizer:
     def __init__(self, model: ClusterModels):
         self.model = model
@@ -174,8 +179,9 @@ class ClusteringOptimizer:
         penalty = np.std(sizes)
         return penalty
 
-    def _custom_score(self, metrics, kwargs, labels):
-        # your current score
+    def _custom_score(self, metrics, kwargs, labels, cluster_penalty_weight=25):
+        # Get a custom score from the evaluated metrics
+        # The cluster penalty weight can be adjusted, and ideally can be done using ML techniques
         n_clusters = kwargs.get("n_clusters") or kwargs.get("n_components", 1)
         silhouette = metrics["silhouette"]
         calinski = metrics["calinski"]
@@ -183,15 +189,12 @@ class ClusteringOptimizer:
         if davies <= 0 or silhouette <= 0:
             return -float("inf")
         base_score = (silhouette * math.log(calinski + 1)) / (davies) * math.sqrt(n_clusters)
-
-        # Add cluster balance penalty (higher penalty reduces score)
         penalty = self._cluster_balance_penalty(labels)
-
-        
-        adjusted_score = base_score - 25 * penalty
+        adjusted_score = base_score - cluster_penalty_weight * penalty
         return adjusted_score
 
     def search(self):
+        # Search through the parameter grid and find the best parameters based on custom score
         all_results = []
         best_score = float('-inf')
         best_params = None
