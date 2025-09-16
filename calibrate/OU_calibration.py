@@ -14,7 +14,6 @@ class OUResults:
         self.sigma_eps2 = ols_params["sigma_eps2"]
         self.ols_summary = ols_params["ols_summary"]
 
-
 class OUCalibration:
     def __init__(self, price_data, cointegrated_cluster_data: dict[int, CointegratedResults]):
         self._log_price_data = np.log(price_data)

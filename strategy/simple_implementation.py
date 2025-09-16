@@ -32,6 +32,7 @@ class OUTrader:
     def run(self, entry_z=3.0, exit_z=0.1, use_ou_params=True, rolling_window=20):
         prices = self.price_data
         n_baskets = len(self.baskets)
+        print(n_baskets)
         capital_per_basket = self.initial_capital / n_baskets
 
         portfolio_pnl = pd.Series(0.0, index=prices.index)

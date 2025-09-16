@@ -85,16 +85,16 @@ class CointegrrationTest:
         self._log_price_data = np.log(_log_price_data)
         self.clustered_data = clustered_data
     
-    def _engle_granger_test(self, ticker1, ticker2, confidence_level=0.8): # For sake of testing 80% confidence
+    def _engle_granger_test(self, ticker1, ticker2, confidence_level=0.8):
         series1 = self._log_price_data[ticker1].dropna()
         series2 = self._log_price_data[ticker2].dropna()
 
         series1, series2 = series1.align(series2, join='inner')    
-        print(f"series1: {len(series1)}, series2: {len(series2)}")
         
         
         if len(series1) < 30 or len(series2) < 30:
             return False, None, None, None
+        
         score1, p1, _ = coint(series1, series2)
         score2, p2, _ = coint(series2, series1)
         p_value = min(p1, p2)
@@ -152,7 +152,6 @@ class CointegrrationTest:
         return cointegrated, rank, best_vector
 
     def run_cointegration_tests(self):
-        print("Running cointegration tests...")
         results = {}
         for cluster in self.clustered_data['cluster'].unique():
             cluster_tickers = self.clustered_data[self.clustered_data['cluster'] == cluster].index.tolist()
@@ -179,7 +178,6 @@ class CointegrrationTest:
                                         chosen_weights= best_spread,
                                         ticker_list= tickers)
                 
-        
         return results
     
     def get_cointegrated_clusters(self):
@@ -190,4 +188,24 @@ class CointegrrationTest:
                 cointegrated_clusters[cluster] = result
         return cointegrated_clusters
 
+class BasketCointegrationTest:
+    def __init__(self, basket, price_data):
+        self.basket = basket
+        self.price_data = price_data
+    
+    def run_test(self, pval_threshold=0.15):
+        coint = self.basket.cointegration_result
+        if coint.type == "Engle-Granger":
+            spread = self.price_data[coint.ticker_1] - coint.beta * self.price_data[coint.ticker_2]
+        elif coint.type == "Johansen":
+            spread = self.price_data[coint.ticker_list].dot(coint.chosen_weights)
+        else:
+            raise ValueError(f"Unknown cointegration type: {coint.type}")
 
+        spread = spread.dropna()
+        if len(spread) < 30:
+            print(f"Basket {self.basket.cluster_id}: Not enough data for ADF test.")
+            return False
+
+        adf_stat, adf_pval, _, _, _, _ = adfuller(spread)
+        return adf_pval < pval_threshold
