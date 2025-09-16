@@ -11,5 +11,11 @@ Steps to run the notebook
 - Step 2: In main.ipynb fill the relevant details in the first cell. Ensure the data start and end dates match that of step 1
 - Step 3: Run all cells
 
-
-
+## Currnet Features
+- Optimum Clustering using a custom score
+- Two layer cointegration testing
+## Features to incorporate
+- Stop Loss in trading
+- Recalibration entry/exit spread
+- Adding Stop Loss
+- Rerunning OU test within live trading
