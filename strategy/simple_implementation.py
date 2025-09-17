@@ -32,7 +32,7 @@ class OUTrader:
     def run(self, entry_z=3.0, exit_z=0.1, use_ou_params=True, rolling_window=20):
         prices = self.price_data
         n_baskets = len(self.baskets)
-        print(n_baskets)
+        
         capital_per_basket = self.initial_capital / n_baskets
 
         portfolio_pnl = pd.Series(0.0, index=prices.index)
@@ -48,13 +48,13 @@ class OUTrader:
             else:
                 zscore = ou_trading_utils.calculate_zscore(spread, window=rolling_window)
 
-            # --- Generate signals
+            
             signals = ou_trading_utils.generate_ou_signals(zscore, entry_threshold=entry_z, exit_threshold=exit_z)
 
-            # --- Spread returns
+            
             spread_ret = spread.diff().fillna(0)
 
-            # --- PnL
+            
             pnl = signals.shift(1).fillna(0) * spread_ret * capital_per_basket
             cum_pnl = pnl.cumsum()
 
