@@ -84,8 +84,9 @@ class ClusterModels(ABC):
             print(items)
     
 class ClusterFactory:
-    @staticmethod
+    _models = {}
     # Make this scaleable for future clustering models by using cls
+    @staticmethod
     def create(model_name, sector, start_date, end_date, **kwargs):
         if model_name == "kmeans":
             return KMeansClustering(sector, start_date, end_date, **kwargs)
